@@ -290,7 +290,7 @@ Simulador - Contato Celular`;
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-white/40 dark:bg-slate-900/40 backdrop-blur-md p-5 rounded-3xl border border-slate-100 dark:border-slate-800/80 shadow-xs">
           <div className="flex items-center gap-3 text-center sm:text-left">
             <img src="/logo-contato-celular.png" alt="Logo" className="h-10 w-auto" />
-            <div>
+            <div className="hidden sm:block">
               <h1 className="text-xl font-extrabold text-slate-800 dark:text-slate-100 tracking-tight font-display">SimulaCartão</h1>
               <p className="text-xs text-slate-500 dark:text-slate-400 font-semibold">Cálculo de parcelas e juros de cartão de crédito em tempo real</p>
             </div>
