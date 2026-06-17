@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useState, useMemo, useEffect, useRef, useCallback, type ChangeEvent } from 'react';
+import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   ChevronRight, 
@@ -36,38 +36,39 @@ export default function App() {
   // Navigation State
   const [activeTab, setActiveTab ] = useState<'principal' | 'configuracoes'>('principal');
 
-  // Input States - raw digit string (e.g. "120000" = R$ 1.200,00)
-  const [valorRaw, setValorRaw] = useState<string>('');
-  const cursorEndRef = useRef(false);
-
+  // Input state - raw digit string (e.g. "120000" = R$ 1.200,00)
+  const [valorRaw, setValorRawState] = useState('');
+  const valorRawRef = useRef('');
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Always show formatted value (the mask)
-  const valorDisplay = useMemo(() => {
-    if (!valorRaw) return '';
-    return formatBRLInput(valorRaw);
-  }, [valorRaw]);
+  const setValorRaw = useCallback((raw: string) => {
+    valorRawRef.current = raw;
+    setValorRawState(raw);
+    if (inputRef.current) {
+      inputRef.current.value = formatBRLInput(raw);
+    }
+  }, []);
 
-  // Numeric value for calculations
   const valorTotalNum = useMemo(() => {
     if (!valorRaw) return 0;
     return parseInt(valorRaw, 10) / 100;
   }, [valorRaw]);
 
-  const handleValorChange = useCallback((e: ChangeEvent<HTMLInputElement>) => {
-    const digits = e.target.value.replace(/\D/g, '');
-    setValorRaw(digits);
-    cursorEndRef.current = true;
-  }, []);
-
-  // Restore cursor to end after React re-renders the formatted value
-  useEffect(() => {
-    if (cursorEndRef.current && inputRef.current) {
-      const len = inputRef.current.value.length;
-      inputRef.current.setSelectionRange(len, len);
-      cursorEndRef.current = false;
+  // Native input handler for reliable mobile cursor control
+  const handleValorInput = useCallback(() => {
+    const input = inputRef.current;
+    if (!input) return;
+    const raw = input.value.replace(/\D/g, '');
+    const formatted = formatBRLInput(raw);
+    if (formatted !== input.value) {
+      input.value = formatted;
+      input.setSelectionRange(formatted.length, formatted.length);
     }
-  });
+    if (raw !== valorRawRef.current) {
+      valorRawRef.current = raw;
+      setValorRawState(raw);
+    }
+  }, []);
 
   const [temJuros, setTemJuros] = useState<boolean>(() => {
     const saved = localStorage.getItem('simulacartao_tem_juros');
@@ -413,12 +414,10 @@ Simulador - Contato Celular`;
                       <input
                         ref={inputRef}
                         id="valor-input"
-                        type="text"
-                        inputMode="numeric"
-                        value={valorDisplay}
-                        onChange={handleValorChange}
-                        className="bg-transparent font-black tracking-tight text-2xl sm:text-3xl focus:outline-none w-full text-white placeholder-blue-200 block focus:ring-0"
+                        type="tel"
                         placeholder="0,00"
+                        onInput={handleValorInput}
+                        className="bg-transparent font-black tracking-tight text-2xl sm:text-3xl focus:outline-none w-full text-white placeholder-blue-200 block focus:ring-0"
                       />
                     </div>
                   </div>
