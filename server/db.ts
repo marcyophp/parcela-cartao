@@ -28,7 +28,7 @@ export function setConfig(key: string, value: string): void {
   getDb().prepare('INSERT OR REPLACE INTO config (key, value) VALUES (?, ?)').run(key, value);
 }
 
-export function setConfigBulk(entries: Record<string, unknown>): void {
+export function setConfigBulk(entries: Record<string, string>): void {
   const stmt = getDb().prepare('INSERT OR REPLACE INTO config (key, value) VALUES (?, ?)');
   const tx = getDb().transaction((data: [string, string][]) => {
     for (const [k, v] of data) stmt.run(k, v);

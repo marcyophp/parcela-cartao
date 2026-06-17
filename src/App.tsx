@@ -158,10 +158,16 @@ export default function App() {
     localStorage.setItem('simulacartao_taxas_individuais', JSON.stringify(taxasIndividuais));
   }, [taxasIndividuais]);
   
-  // Load server config on mount
-  useEffect(() => {
-    fetch('/api/config').then(r => r.ok ? r.json() : null).then(data => {
-      if (!data) return;
+  // Load server config
+  const [loadStatus, setLoadStatus] = useState<'idle' | 'loading' | 'loaded' | 'error'>('idle');
+
+  const handleLoadFromServer = useCallback(async () => {
+    setLoadStatus('loading');
+    try {
+      const res = await fetch('/api/config');
+      if (!res.ok) { setLoadStatus('error'); setTimeout(() => setLoadStatus('idle'), 2000); return; }
+      const data = await res.json();
+      if (!data) { setLoadStatus('error'); setTimeout(() => setLoadStatus('idle'), 2000); return; }
       if (data.tem_juros !== undefined) setTemJuros(data.tem_juros === 'true');
       if (data.taxa_juros !== undefined) setTaxaJuros(parseFloat(data.taxa_juros));
       if (data.tipo_juros !== undefined && (data.tipo_juros === 'composto' || data.tipo_juros === 'simples')) setTipoJuros(data.tipo_juros);
@@ -169,8 +175,16 @@ export default function App() {
       if (data.taxas_individuais !== undefined) {
         try { setTaxasIndividuais(JSON.parse(data.taxas_individuais)); } catch {}
       }
-    }).catch(() => {});
+      setLoadStatus('loaded');
+      setTimeout(() => setLoadStatus('idle'), 2000);
+    } catch {
+      setLoadStatus('error');
+      setTimeout(() => setLoadStatus('idle'), 2000);
+    }
   }, []);
+
+  // Load server config on mount
+  useEffect(() => { handleLoadFromServer(); }, [handleLoadFromServer]);
 
   // Settings access gate
   const [settingsUnlocked, setSettingsUnlocked] = useState(false);
@@ -622,6 +636,19 @@ Simulador - Contato Celular`;
                     }`}
                   >
                     {syncStatus === 'saving' ? 'Salvando…' : syncStatus === 'saved' ? 'Salvo ✓' : syncStatus === 'error' ? 'Erro' : 'Salvar no Servidor'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleLoadFromServer}
+                    className={`text-xs font-bold cursor-pointer shrink-0 px-3 py-1.5 rounded-lg transition-all ${
+                      loadStatus === 'loaded'
+                        ? 'bg-green-50 dark:bg-green-950/30 text-green-600 dark:text-green-400'
+                        : loadStatus === 'error'
+                        ? 'bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-400'
+                        : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-750'
+                    }`}
+                  >
+                    {loadStatus === 'loading' ? 'Carregando…' : loadStatus === 'loaded' ? 'Ok ✓' : loadStatus === 'error' ? 'Erro' : 'Recarregar'}
                   </button>
                   <button
                     type="button"
