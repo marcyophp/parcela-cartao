@@ -158,14 +158,50 @@ export default function App() {
     localStorage.setItem('simulacartao_taxas_individuais', JSON.stringify(taxasIndividuais));
   }, [taxasIndividuais]);
   
+  // Load server config on mount
+  useEffect(() => {
+    fetch('/api/config').then(r => r.ok ? r.json() : null).then(data => {
+      if (!data) return;
+      if (data.tem_juros !== undefined) setTemJuros(data.tem_juros === 'true');
+      if (data.taxa_juros !== undefined) setTaxaJuros(parseFloat(data.taxa_juros));
+      if (data.tipo_juros !== undefined && (data.tipo_juros === 'composto' || data.tipo_juros === 'simples')) setTipoJuros(data.tipo_juros);
+      if (data.modo_taxas !== undefined && (data.modo_taxas === 'global' || data.modo_taxas === 'individual')) setModoTaxas(data.modo_taxas);
+      if (data.taxas_individuais !== undefined) {
+        try { setTaxasIndividuais(JSON.parse(data.taxas_individuais)); } catch {}
+      }
+    }).catch(() => {});
+  }, []);
+
   // Settings access gate
   const [settingsUnlocked, setSettingsUnlocked] = useState(false);
   const [passwordInput, setPasswordInput] = useState('');
+  const [syncStatus, setSyncStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
 
   const handleEnterSettings = () => {
     setSettingsUnlocked(false);
     setPasswordInput('');
     setActiveTab('configuracoes');
+  };
+
+  const handleSaveToServer = async () => {
+    setSyncStatus('saving');
+    try {
+      const authRes = await fetch('/api/auth', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({password: '3692'})});
+      if (!authRes.ok) { setSyncStatus('error'); return; }
+      const config = {
+        tem_juros: String(temJuros),
+        taxa_juros: String(taxaJuros),
+        tipo_juros: tipoJuros,
+        modo_taxas: modoTaxas,
+        taxas_individuais: JSON.stringify(taxasIndividuais),
+      };
+      const res = await fetch('/api/config', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({password: '3692', config})});
+      if (res.ok) setSyncStatus('saved');
+      else setSyncStatus('error');
+    } catch {
+      setSyncStatus('error');
+    }
+    setTimeout(() => setSyncStatus('idle'), 2000);
   };
 
   // Menu and online state
@@ -573,13 +609,28 @@ Simulador - Contato Celular`;
                     Ajuste as regras de encargos e modalidade de cálculo aplicadas ao parcelamento ativo do SimulaCartão.
                   </p>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => { setSettingsUnlocked(false); setPasswordInput(''); setActiveTab('principal'); }}
-                  className="text-xs font-bold text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 cursor-pointer shrink-0"
-                >
-                  Trancar
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={handleSaveToServer}
+                    className={`text-xs font-bold cursor-pointer shrink-0 px-3 py-1.5 rounded-lg transition-all ${
+                      syncStatus === 'saved'
+                        ? 'bg-green-50 dark:bg-green-950/30 text-green-600 dark:text-green-400'
+                        : syncStatus === 'error'
+                        ? 'bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-400'
+                        : 'bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/40'
+                    }`}
+                  >
+                    {syncStatus === 'saving' ? 'Salvando…' : syncStatus === 'saved' ? 'Salvo ✓' : syncStatus === 'error' ? 'Erro' : 'Salvar no Servidor'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setSettingsUnlocked(false); setPasswordInput(''); setActiveTab('principal'); }}
+                    className="text-xs font-bold text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 cursor-pointer shrink-0"
+                  >
+                    Trancar
+                  </button>
+                </div>
               </div>
             </div>
 
