@@ -37,12 +37,17 @@ export default function App() {
   const [activeTab, setActiveTab ] = useState<'principal' | 'configuracoes'>('principal');
 
   // Input States - raw digit string (e.g. "120000" = R$ 1.200,00)
-  const [valorRaw, setValorRaw] = useState<string>('120000');
+  const [valorRaw, setValorRaw] = useState<string>('');
+  const [valorFocused, setValorFocused] = useState(false);
 
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Formatted display value
-  const valorDisplay = useMemo(() => formatBRLInput(valorRaw), [valorRaw]);
+  // Formatted display value (only when not focused)
+  const valorDisplay = useMemo(() => {
+    if (!valorRaw) return '';
+    if (valorFocused) return valorRaw;
+    return formatBRLInput(valorRaw);
+  }, [valorRaw, valorFocused]);
 
   // Numeric value for calculations
   const valorTotalNum = useMemo(() => {
@@ -50,27 +55,17 @@ export default function App() {
     return parseInt(valorRaw, 10) / 100;
   }, [valorRaw]);
 
-  // BRL mask with cursor preservation
   const handleValorChange = useCallback((e: ChangeEvent<HTMLInputElement>) => {
-    const cursor = e.target.selectionStart ?? 0;
-    const prevVal = e.target.value;
-    const digitsBefore = (prevVal.slice(0, cursor).match(/\d/g) || []).length;
-
-    const digits = prevVal.replace(/\D/g, '');
+    const digits = e.target.value.replace(/\D/g, '');
     setValorRaw(digits);
+  }, []);
 
-    requestAnimationFrame(() => {
-      if (inputRef.current) {
-        const formatted = inputRef.current.value;
-        let count = 0;
-        let pos = formatted.length;
-        for (let i = 0; i < formatted.length; i++) {
-          if (/\d/.test(formatted[i])) count++;
-          if (count >= digitsBefore) { pos = i + 1; break; }
-        }
-        inputRef.current.setSelectionRange(pos, pos);
-      }
-    });
+  const handleValorFocus = useCallback(() => {
+    setValorFocused(true);
+  }, []);
+
+  const handleValorBlur = useCallback(() => {
+    setValorFocused(false);
   }, []);
 
   const [temJuros, setTemJuros] = useState<boolean>(() => {
@@ -421,6 +416,8 @@ Simulador - Contato Celular`;
                         inputMode="numeric"
                         value={valorDisplay}
                         onChange={handleValorChange}
+                        onFocus={handleValorFocus}
+                        onBlur={handleValorBlur}
                         className="bg-transparent font-black tracking-tight text-2xl sm:text-3xl focus:outline-none w-full text-white placeholder-blue-200 block focus:ring-0"
                         placeholder="0,00"
                       />
