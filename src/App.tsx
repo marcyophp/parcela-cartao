@@ -38,16 +38,15 @@ export default function App() {
 
   // Input States - raw digit string (e.g. "120000" = R$ 1.200,00)
   const [valorRaw, setValorRaw] = useState<string>('');
-  const [valorFocused, setValorFocused] = useState(false);
+  const cursorEndRef = useRef(false);
 
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Formatted display value (only when not focused)
+  // Always show formatted value (the mask)
   const valorDisplay = useMemo(() => {
     if (!valorRaw) return '';
-    if (valorFocused) return valorRaw;
     return formatBRLInput(valorRaw);
-  }, [valorRaw, valorFocused]);
+  }, [valorRaw]);
 
   // Numeric value for calculations
   const valorTotalNum = useMemo(() => {
@@ -58,15 +57,17 @@ export default function App() {
   const handleValorChange = useCallback((e: ChangeEvent<HTMLInputElement>) => {
     const digits = e.target.value.replace(/\D/g, '');
     setValorRaw(digits);
+    cursorEndRef.current = true;
   }, []);
 
-  const handleValorFocus = useCallback(() => {
-    setValorFocused(true);
-  }, []);
-
-  const handleValorBlur = useCallback(() => {
-    setValorFocused(false);
-  }, []);
+  // Restore cursor to end after React re-renders the formatted value
+  useEffect(() => {
+    if (cursorEndRef.current && inputRef.current) {
+      const len = inputRef.current.value.length;
+      inputRef.current.setSelectionRange(len, len);
+      cursorEndRef.current = false;
+    }
+  });
 
   const [temJuros, setTemJuros] = useState<boolean>(() => {
     const saved = localStorage.getItem('simulacartao_tem_juros');
@@ -416,8 +417,6 @@ Simulador - Contato Celular`;
                         inputMode="numeric"
                         value={valorDisplay}
                         onChange={handleValorChange}
-                        onFocus={handleValorFocus}
-                        onBlur={handleValorBlur}
                         className="bg-transparent font-black tracking-tight text-2xl sm:text-3xl focus:outline-none w-full text-white placeholder-blue-200 block focus:ring-0"
                         placeholder="0,00"
                       />
