@@ -1,0 +1,38 @@
+@import "tailwindcss";
+
+html {
+  font-size: 1rem;
+}
+
+@variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Plus Jakarta Sans", var(--font-sans);
+}
+
+/* Custom styles for our mobile frame and UI refinements */
+body {
+  background-color: #f8fafc;
+  color: #0f172a;
+  font-family: var(--font-sans);
+  transition-property: background-color, color, border-color;
+  transition-duration: 300ms;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+body.dark {
+  background-color: #020617;
+  color: #f1f5f9;
+}
+
+/* Hide spin-button for input numbers */
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type=number] {
+  -moz-appearance: textfield;
+}

@@ -1,0 +1,6 @@
+{
+  "name": "Simulador de Parcelas de Cartão",
+  "description": "Um simulador simples de parcelamento de cartão de crédito com cálculo automático de juros e taxas.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
